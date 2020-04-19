@@ -30,7 +30,9 @@ int menuFirmwareInfoScreen(uiEvent_t *ev, bool isFirstRun)
 	else
 	{
 		if (ev->hasEvent)
+		{
 			handleEvent(ev);
+		}
 	}
 	return 0;
 }
@@ -39,15 +41,33 @@ static void updateScreen(void)
 {
 	char buf[17];
 
-	snprintf(buf, 16, "[ %s ]", GITVERSION);
-	buf[11] = 0; // git hash id 7 char long;
+	snprintf(buf, 16, "[ %s", GITVERSION);
+	buf[9] = 0; // git hash id 7 char long;
+	strcat(buf, " ]");
 
 	ucClearBuf();
-	ucPrintCentered(5, "OpenGD77", FONT_8x16);
-	ucPrintCentered(24, currentLanguage->built, FONT_8x8);
-	ucPrintCentered(34,__TIME__, FONT_8x8);
-	ucPrintCentered(44,__DATE__, FONT_8x8);
-	ucPrintCentered(54, buf, FONT_8x8);
+
+#if defined(PLATFORM_GD77)
+	ucPrintCentered(5, "OpenGD77", FONT_SIZE_3);
+#elif defined(PLATFORM_DM1801)
+	ucPrintCentered(5, "OpenDM1801", FONT_SIZE_3);
+#elif defined(PLATFORM_RD5R)
+	ucPrintCentered(2, "OpenRD5R", FONT_SIZE_3);
+#endif
+
+#if defined(PLATFORM_RD5R)
+	ucPrintCentered(14, currentLanguage->built, FONT_SIZE_2);
+	ucPrintCentered(24,__TIME__, FONT_SIZE_2);
+	ucPrintCentered(32,__DATE__, FONT_SIZE_2);
+	ucPrintCentered(40, buf, FONT_SIZE_2);
+#else
+	ucPrintCentered(24, currentLanguage->built, FONT_SIZE_2);
+	ucPrintCentered(34,__TIME__, FONT_SIZE_2);
+	ucPrintCentered(44,__DATE__, FONT_SIZE_2);
+	ucPrintCentered(54, buf, FONT_SIZE_2);
+
+#endif
+
 	ucRender();
 	displayLightTrigger();
 }
@@ -55,6 +75,8 @@ static void updateScreen(void)
 
 static void handleEvent(uiEvent_t *ev)
 {
+	displayLightTrigger();
+
 	if (KEYCHECK_PRESS(ev->keys,KEY_RED))
 	{
 		menuSystemPopPreviousMenu();

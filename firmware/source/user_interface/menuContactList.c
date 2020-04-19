@@ -15,12 +15,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <fw_codeplug.h>
+#include <codeplug.h>
+#include <main.h>
+#include <settings.h>
 #include <user_interface/menuSystem.h>
-#include <user_interface/uiUtilityQSOData.h>
+#include <user_interface/uiUtilities.h>
 #include <user_interface/uiLocalisation.h>
-#include "fw_main.h"
-#include "fw_settings.h"
 
 static void updateScreen(void);
 static void handleEvent(uiEvent_t *ev);
@@ -99,7 +99,7 @@ static void updateScreen(void)
 
 		if (gMenusEndIndex == 0)
 		{
-			ucPrintCentered(32, currentLanguage->empty_list, FONT_8x16);
+			ucPrintCentered((DISPLAY_SIZE_Y / 2), currentLanguage->empty_list, FONT_SIZE_3);
 		}
 		else
 		{
@@ -119,20 +119,19 @@ static void updateScreen(void)
 	case MENU_CONTACT_LIST_CONFIRM:
 		codeplugUtilConvertBufToString(contactListContactData.name, nameBuf, 16);
 		menuDisplayTitle(nameBuf);
-		ucPrintCentered(16, currentLanguage->delete_contact_qm, FONT_8x16);
+		ucPrintCentered(16, currentLanguage->delete_contact_qm, FONT_SIZE_3);
 		ucDrawChoice(CHOICE_YESNO, false);
 		break;
 	case MENU_CONTACT_LIST_DELETED:
 		codeplugUtilConvertBufToString(contactListContactData.name, nameBuf, 16);
-//		menuDisplayTitle(nameBuf);
-		ucPrintCentered(16, currentLanguage->contact_deleted, FONT_8x16);
+		ucPrintCentered(16, currentLanguage->contact_deleted, FONT_SIZE_3);
 		ucDrawChoice(CHOICE_DISMISS, false);
 		break;
 	case MENU_CONTACT_LIST_TG_IN_RXGROUP:
 		codeplugUtilConvertBufToString(contactListContactData.name, nameBuf, 16);
 		menuDisplayTitle(nameBuf);
-		ucPrintCentered(16, currentLanguage->contact_used, FONT_8x16);
-		ucPrintCentered(32, currentLanguage->in_rx_group, FONT_8x16);
+		ucPrintCentered(16, currentLanguage->contact_used, FONT_SIZE_3);
+		ucPrintCentered((DISPLAY_SIZE_Y/2), currentLanguage->in_rx_group, FONT_SIZE_3);
 		ucDrawChoice(CHOICE_DISMISS, false);
 		break;
 	}
@@ -200,7 +199,7 @@ static void handleEvent(uiEvent_t *ev)
 		{
 			memset(contact.name, 0xff, 16);
 			contact.tgNumber = 0;
-			contact.callType = 0;
+			contact.callType = 0xFF;
 			codeplugContactSaveDataForIndex(contactListContactIndex, &contact);
 			contactListContactIndex = 0;
 			menuContactListTimeout = 2000;

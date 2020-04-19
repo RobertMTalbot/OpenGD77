@@ -15,13 +15,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <hardware/fw_HR-C6000.h>
+#include <codeplug.h>
+#include <HR-C6000.h>
+#include <settings.h>
+#include <ticks.h>
 #include <user_interface/menuSystem.h>
-#include <user_interface/uiUtilityQSOData.h>
+#include <user_interface/uiUtilities.h>
 #include <user_interface/uiLocalisation.h>
-#include "fw_settings.h"
-#include "fw_codeplug.h"
-#include "fw_ticks.h"
 
 static char digits[9];
 static int pcIdx;
@@ -31,7 +31,9 @@ static void updateCursor(void);
 static void updateScreen(void);
 static void handleEvent(uiEvent_t *ev);
 
-static const uint32_t CURSOR_UPDATE_TIMEOUT = 1000;
+static const uint32_t CURSOR_UPDATE_TIMEOUT = 500;
+static const int NUM_PC_OR_TG_DIGITS = 8;
+static const int MAX_TG_OR_PC_VALUE = 16777215;
 
 static const char *menuName[4];
 enum DISPLAY_MENU_LIST { ENTRY_TG = 0, ENTRY_PC, ENTRY_SELECT_CONTACT, ENTRY_USER_DMR_ID, NUM_ENTRY_ITEMS};
@@ -44,8 +46,8 @@ int menuNumericalEntry(uiEvent_t *ev, bool isFirstRun)
 		menuName[1] = currentLanguage->pc_entry;
 		menuName[2] = currentLanguage->contact;
 		menuName[3] = currentLanguage->user_dmr_id;
-		gMenusCurrentItemIndex=ENTRY_TG;
-		digits[0]=0x00;
+		gMenusCurrentItemIndex = ENTRY_TG;
+		digits[0] = 0;
 		pcIdx = 0;
 		updateScreen();
 	}
@@ -61,7 +63,7 @@ int menuNumericalEntry(uiEvent_t *ev, bool isFirstRun)
 				handleEvent(ev);
 			else
 			{
-				if ((gMenusCurrentItemIndex != ENTRY_SELECT_CONTACT) && (strlen(digits) <= 7))
+				if ((gMenusCurrentItemIndex != ENTRY_SELECT_CONTACT) && (strlen(digits) <= NUM_PC_OR_TG_DIGITS))
 				{
 					updateCursor();
 				}
@@ -76,7 +78,7 @@ static void updateCursor(void)
 	size_t sLen;
 
 	// Display blinking cursor only when digits could be entered.
-	if ((gMenusCurrentItemIndex != ENTRY_SELECT_CONTACT) && ((sLen = strlen(digits)) < 7))
+	if ((gMenusCurrentItemIndex != ENTRY_SELECT_CONTACT) && ((sLen = strlen(digits)) <= NUM_PC_OR_TG_DIGITS))
 	{
 		static uint32_t lastBlink = 0;
 		static bool     blink = false;
@@ -86,7 +88,7 @@ static void updateCursor(void)
 		{
 			sLen *= 8;
 
-			ucPrintCore((((128 - sLen) >> 1) + sLen), 32, "_", FONT_8x16, 0, blink);
+			ucPrintCore((((128 - sLen) >> 1) + sLen), (DISPLAY_SIZE_Y / 2), "_", FONT_SIZE_3, 0, blink);
 
 			blink = !blink;
 			lastBlink = m;
@@ -104,20 +106,20 @@ static void updateScreen(void)
 
 	ucClearBuf();
 
-	ucDrawRoundRectWithDropShadow(2, y - 1, (128 - 6), 21, 3, true);
+	ucDrawRoundRectWithDropShadow(2, y - 1, (128 - 6), ((DISPLAY_SIZE_Y / 8) - 1) * 3, 3, true);
 
 	// Not really centered, off by 2 pixels
-	ucPrintAt(((128 - sLen) >> 1) - 2, y, (char *)menuName[gMenusCurrentItemIndex], FONT_8x16);
+	ucPrintAt(((128 - sLen) >> 1) - 2, y, (char *)menuName[gMenusCurrentItemIndex], FONT_SIZE_3);
 
 	if (pcIdx == 0)
 	{
-		ucPrintCentered(32, (char *)digits, FONT_8x16);
+		ucPrintCentered((DISPLAY_SIZE_Y / 2), (char *)digits, FONT_SIZE_3);
 	}
 	else
 	{
 		codeplugUtilConvertBufToString(contact.name, buf, 16);
-		ucPrintCentered(32, buf, FONT_8x16);
-		ucPrintCentered(52, (char *)digits, FONT_6x8);
+		ucPrintCentered((DISPLAY_SIZE_Y / 2), buf, FONT_SIZE_3);
+		ucPrintCentered((DISPLAY_SIZE_Y - 12), (char *)digits, FONT_SIZE_1);
 	}
 
 	displayLightTrigger();
@@ -130,18 +132,26 @@ static int getNextContact(int curidx, int dir, struct_codeplugContact_t *contact
 
 	do {
 		idx += dir;
-		if (idx >= 1024) {
-			if (curidx == 0) {
+		if (idx >= 1024)
+		{
+			if (curidx == 0)
+			{
 				idx = 0;
 				break;
 			}
 			idx = 1;
-		} else if (idx ==0) {
-			if (curidx == 0) {
-				idx = 0;
-				break;
+		}
+		else
+		{
+			if (idx ==0)
+			{
+				if (curidx == 0)
+				{
+					idx = 0;
+					break;
+				}
+				idx = 1024;
 			}
-			idx = 1024;
 		}
 		codeplugContactGetDataForIndex(idx, contact);
 	} while ((curidx != idx) && ((*contact).name[0] == 0xff));
@@ -154,145 +164,177 @@ static void handleEvent(uiEvent_t *ev)
 	size_t sLen;
 	uint32_t tmpID;
 
+	displayLightTrigger();
+
 	if (KEYCHECK_SHORTUP(ev->keys,KEY_RED))
 	{
 		menuSystemPopPreviousMenu();
 		return;
 	}
-	else if (KEYCHECK_SHORTUP(ev->keys,KEY_GREEN))
+	else
 	{
-		tmpID = atoi(digits);
-		if (tmpID > 0 && tmpID <= 9999999) {
-			if (gMenusCurrentItemIndex != ENTRY_USER_DMR_ID)
+		if (KEYCHECK_SHORTUP(ev->keys,KEY_GREEN))
+		{
+			tmpID = atoi(digits);
+			if (tmpID > 0 && tmpID <= MAX_TG_OR_PC_VALUE)
 			{
-				uint32_t saveTrxTalkGroupOrPcId = trxTalkGroupOrPcId;
-				trxTalkGroupOrPcId = tmpID;
-				nonVolatileSettings.overrideTG = trxTalkGroupOrPcId;
-				if (gMenusCurrentItemIndex == ENTRY_PC || (pcIdx != 0 && contact.callType == 0x01))
+				if (gMenusCurrentItemIndex != ENTRY_USER_DMR_ID)
 				{
-					// Private Call
-
-					if ((saveTrxTalkGroupOrPcId >> 24) != PC_CALL_FLAG)
+					if (gMenusCurrentItemIndex == ENTRY_PC || (pcIdx != 0 && contact.callType == 0x01))
 					{
-						// if the current Tx TG is a TalkGroup then save it so it can be stored after the end of the private call
-						menuUtilityTgBeforePcMode = saveTrxTalkGroupOrPcId;
+						setOverrideTGorPC(tmpID, true);
 					}
-					nonVolatileSettings.overrideTG |= (PC_CALL_FLAG << 24);
+					else
+					{
+						setOverrideTGorPC(tmpID, false);
+					}
 				}
+				else
+				{
+					trxDMRID = tmpID;
+					if (ev->buttons & BUTTON_SK2)
+					{
+						// make the change to DMR ID permanent if Function + Green is pressed
+						codeplugSetUserDMRID(trxDMRID);
+					}
+				}
+				menuSystemPopAllAndDisplayRootMenu();
 			}
 			else
 			{
-				trxDMRID = tmpID;
-				if (ev->buttons & BUTTON_SK2)
-				{
-					// make the change to DMR ID permanent if Function + Green is pressed
-					codeplugSetUserDMRID(trxDMRID);
-				}
+				set_melody(melody_ERROR_beep);
 			}
-		}
-		menuSystemPopAllAndDisplayRootMenu();
-	}
-	else if (KEYCHECK_SHORTUP(ev->keys,KEY_HASH))
-	{
-		pcIdx = 0;
-		if ((ev->buttons & BUTTON_SK2)!= 0  && gMenusCurrentItemIndex == ENTRY_SELECT_CONTACT)
-		{
-			digits[0] = 0x00;
-			gMenusCurrentItemIndex = ENTRY_USER_DMR_ID;
+
 		}
 		else
 		{
-			gMenusCurrentItemIndex++;
-			if (gMenusCurrentItemIndex > ENTRY_SELECT_CONTACT)
+			if (KEYCHECK_SHORTUP(ev->keys,KEY_HASH))
 			{
-				gMenusCurrentItemIndex = ENTRY_TG;
-			} else if (gMenusCurrentItemIndex == ENTRY_SELECT_CONTACT)
-			{
-				pcIdx = getNextContact(0, 1, &contact);
-				if (pcIdx != 0 ) {
-					itoa(contact.tgNumber, digits, 10);
+				pcIdx = 0;
+
+				if (((ev->buttons & BUTTON_SK2) != 0) && (gMenusCurrentItemIndex == ENTRY_SELECT_CONTACT))
+				{
+					snprintf(digits, 8, "%d", trxDMRID);
+					digits[8] = 0;
+					gMenusCurrentItemIndex = ENTRY_USER_DMR_ID;
 				}
+				else
+				{
+					gMenusCurrentItemIndex++;
+					if (gMenusCurrentItemIndex > ENTRY_SELECT_CONTACT)
+					{
+						gMenusCurrentItemIndex = ENTRY_TG;
+					}
+					else
+					{
+						if (gMenusCurrentItemIndex == ENTRY_SELECT_CONTACT)
+						{
+							pcIdx = getNextContact(0, 1, &contact);
+
+							if (pcIdx != 0)
+							{
+								itoa(contact.tgNumber, digits, 10);
+							}
+						}
+					}
+				}
+				updateScreen();
 			}
 		}
-
-		updateScreen();
 	}
+
 	if (gMenusCurrentItemIndex == ENTRY_SELECT_CONTACT)
 	{
 		int idx = pcIdx;
 
-		if (KEYCHECK_PRESS(ev->keys,KEY_DOWN)) {
+		if (KEYCHECK_PRESS(ev->keys,KEY_DOWN))
+		{
 			idx = getNextContact(pcIdx, 1, &contact);
-		} else if (KEYCHECK_PRESS(ev->keys,KEY_UP)) {
-			idx = getNextContact(pcIdx, -1, &contact);
 		}
-		if (pcIdx != idx ) {
+		else
+		{
+			if (KEYCHECK_PRESS(ev->keys,KEY_UP))
+			{
+				idx = getNextContact(pcIdx, -1, &contact);
+			}
+		}
+		if (pcIdx != idx )
+		{
 			pcIdx = idx;
 			itoa(contact.tgNumber, digits, 10);
 			updateScreen();
 		}
 	}
-	else if ((sLen = strlen(digits)) <= 7)
+	else
 	{
-		bool refreshScreen = false;
-
-		// Inc / Dec entered value.
-		if (KEYCHECK_PRESS(ev->keys,KEY_UP) || KEYCHECK_PRESS(ev->keys,KEY_DOWN))
+		if ((sLen = strlen(digits)) <= NUM_PC_OR_TG_DIGITS)
 		{
-			if (strlen(digits))
+			bool refreshScreen = false;
+
+			// Inc / Dec entered value.
+			if (KEYCHECK_PRESS(ev->keys,KEY_UP) || KEYCHECK_PRESS(ev->keys,KEY_DOWN))
 			{
-				unsigned long int ccs7 = strtoul(digits, NULL, 10);
-
-				if (KEYCHECK_PRESS(ev->keys,KEY_UP))
+				if (strlen(digits))
 				{
-					if (ccs7 < 9999999)
-						ccs7++;
+					unsigned long int ccs7 = strtoul(digits, NULL, 10);
 
-					refreshScreen = true;
+					if (KEYCHECK_PRESS(ev->keys,KEY_UP))
+					{
+						if (ccs7 < MAX_TG_OR_PC_VALUE)
+						{
+							ccs7++;
+						}
+						refreshScreen = true;
+					}
+					else
+					{
+						if (ccs7 > 1)
+						{
+							ccs7--;
+						}
+						refreshScreen = true;
+					}
+
+					if (refreshScreen)
+					{
+						sprintf(digits, "%lu", ccs7);
+					}
+				}
+			} // Delete a digit
+			else
+			{
+				if (KEYCHECK_PRESS(ev->keys,KEY_LEFT))
+				{
+					if ((sLen = strlen(digits)) > 0)
+					{
+						digits[sLen - 1] = 0;
+						refreshScreen = true;
+					}
 				}
 				else
 				{
-					if (ccs7 > 1)
-						ccs7--;
+					// Add a digit
+					if (sLen < NUM_PC_OR_TG_DIGITS)
+					{
+						int keyval = menuGetKeypadKeyValue(ev, true);
 
-					refreshScreen = true;
-				}
-
-				if (refreshScreen)
-				{
-					sprintf(digits, "%lu", ccs7);
+						if (keyval != 99)
+						{
+							char c[2] = {0, 0};
+							c[0] = keyval+'0';
+							strcat(digits, c);
+							refreshScreen = true;
+						}
+					}
 				}
 			}
-		} // Delete a digit
-		else if (KEYCHECK_PRESS(ev->keys,KEY_LEFT))
-		{
-			if ((sLen = strlen(digits)) > 0)
+
+			if (refreshScreen)
 			{
-				digits[sLen - 1] = 0;
-				refreshScreen = true;
+				updateScreen();
 			}
-		}
-		else
-		{
-			// Add a digit
-			if (sLen < 7)
-			{
-				char c[2] = {0, 0};
-				c[0] = keypressToNumberChar(ev->keys);
-				
-				if (c[0]!=0)
-				{
-					strcat(digits,c);
-					refreshScreen = true;
-				}
-			}
-		}
 
-		if (refreshScreen)
-		{
-			updateScreen();
+			updateCursor();
 		}
-
-		updateCursor();
 	}
 }

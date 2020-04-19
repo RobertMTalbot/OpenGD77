@@ -20,11 +20,11 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include <display.h>
 #include <hardware/UC1701.h>
 #include <hardware/UC1701_charset.h>
+#include <settings.h>
 #include <user_interface/uiLocalisation.h>
-#include "fw_display.h"
-#include "fw_settings.h"
 
 // number representing the maximum angle (e.g. if 100, then if you pass in start=0 and end=50, you get a half circle)
 // this can be changed with setArcParams function at runtime
@@ -39,7 +39,7 @@ static float _angleOffset = DEFAULT_ANGLE_OFFSET;
 #define swap(x, y) do { typeof(x) t = x; x = y; y = t; } while(0)
 
 
-uint8_t screenBuf[1024];
+__attribute__((section(".data.$RAM2"))) uint8_t screenBuf[1024];
 //#define DISPLAY_CHECK_BOUNDS
 
 #ifdef DISPLAY_CHECK_BOUNDS
@@ -47,30 +47,15 @@ static const uint8_t *screenBufEnd = screenBuf + sizeof(screenBuf);
 #endif
 int activeBufNum=0;
 
-void UC1701_setCommandMode(bool isCommand)
-{
-	GPIO_PinWrite(GPIO_Display_RS, Pin_Display_RS, !isCommand);
-}
+#if defined(PLATFORM_RD5R)
+const int DISPLAY_SIZE_Y = 48;
+const int FONT_SIZE_3_HEIGHT = 8;
+#else
+const int DISPLAY_SIZE_Y = 64;
+const int FONT_SIZE_3_HEIGHT = 16;
+#endif
+const int DISPLAY_SIZE_X = 128;
 
-void UC1701_transfer(register uint8_t data1)
-{
-	for (register int i=0; i<8; i++)
-	{
-		GPIO_Display_SCK->PCOR = 1U << Pin_Display_SCK;
-
-		if ((data1&0x80) == 0U)
-		{
-			GPIO_Display_SDA->PCOR = 1U << Pin_Display_SDA;// Hopefully the compiler will otimise this to a value rather than using a shift
-		}
-		else
-		{
-			GPIO_Display_SDA->PSOR = 1U << Pin_Display_SDA;// Hopefully the compiler will otimise this to a value rather than using a shift
-		}
-		GPIO_Display_SCK->PSOR = 1U << Pin_Display_SCK;// Hopefully the compiler will otimise this to a value rather than using a shift
-
-		data1=data1<<1;
-	}
-}
 
 int16_t ucSetPixel(int16_t x, int16_t y, bool color)
 {
@@ -93,48 +78,7 @@ int16_t ucSetPixel(int16_t x, int16_t y, bool color)
 	return 0;
 }
 
-void ucRenderRows(int16_t startRow, int16_t endRow)
-{
-	uint8_t *rowPos = (screenBuf + startRow*128);
-	taskENTER_CRITICAL();
-	for(int16_t row=startRow;row<endRow;row++)
-	{
-		UC1701_setCommandMode(true);
-		UC1701_transfer(0xb0 | row); // set Y
-		UC1701_transfer(0x10 | 0); // set X (high MSB)
 
-// Note there are 4 pixels at the left which are no in the hardware of the LCD panel, but are in the RAM buffer of the controller
-		UC1701_transfer(0x00 | 4); // set X (low MSB).
-
-		UC1701_setCommandMode(false);
-		uint8_t data1;
-		for(int16_t line=0;line<128;line++)
-		{
-			//UC1701_transfer(*rowPos++);
-			data1= *rowPos;
-			for (register int i=0; i<8; i++)
-			{
-				//__asm volatile( "nop" );
-				GPIO_Display_SCK->PCOR = 1U << Pin_Display_SCK;
-				//__asm volatile( "nop" );
-				if ((data1&0x80) == 0U)
-				{
-					GPIO_Display_SDA->PCOR = 1U << Pin_Display_SDA;// Hopefully the compiler will optimise this to a value rather than using a shift
-				}
-				else
-				{
-					GPIO_Display_SDA->PSOR = 1U << Pin_Display_SDA;// Hopefully the compiler will optimise this to a value rather than using a shift
-				}
-				//__asm volatile( "nop" );
-				GPIO_Display_SCK->PSOR = 1U << Pin_Display_SCK;// Hopefully the compiler will optimise this to a value rather than using a shift
-
-				data1=data1<<1;
-			}
-			rowPos++;
-		}
-	}
-	taskEXIT_CRITICAL();
-}
 
 void ucRender(void)
 {
@@ -156,6 +100,7 @@ static inline bool checkWritePos(uint8_t * writePos)
 
 int ucPrintCore(int16_t x, int16_t y, const char *szMsg, ucFont_t fontSize, ucTextAlign_t alignment, bool isInverted)
 {
+#if ! defined(PLATFORM_GD77S)
 	int16_t i, sLen;
 	uint8_t *currentCharData;
 	int16_t charWidthPixels;
@@ -171,22 +116,39 @@ int ucPrintCore(int16_t x, int16_t y, const char *szMsg, ucFont_t fontSize, ucTe
 
     switch(fontSize)
     {
-    	case FONT_6x8:
+#if defined(PLATFORM_RD5R)
+       	case FONT_SIZE_1:
     		currentFont = (uint8_t *) font_6x8;
     		break;
-    	case FONT_6x8_BOLD:
+    	case FONT_SIZE_1_BOLD:
 			currentFont = (uint8_t *) font_6x8_bold;
     		break;
-    	case FONT_8x8:
+    	case FONT_SIZE_2:
+    		currentFont = (uint8_t *) font_8x8;//font_8x8;
+    		break;
+    	case FONT_SIZE_3:
+    		currentFont = (uint8_t *) font_8x8;//font_8x16;
+			break;
+    	case FONT_SIZE_4:
+    		currentFont = (uint8_t *) font_8x16;// font_16x32;
+			break;
+#else
+    	case FONT_SIZE_1:
+    		currentFont = (uint8_t *) font_6x8;
+    		break;
+    	case FONT_SIZE_1_BOLD:
+			currentFont = (uint8_t *) font_6x8_bold;
+    		break;
+    	case FONT_SIZE_2:
     		currentFont = (uint8_t *) font_8x8;
     		break;
-    	case FONT_8x16:
+    	case FONT_SIZE_3:
     		currentFont = (uint8_t *) font_8x16;
 			break;
-    	case FONT_16x32:
+    	case FONT_SIZE_4:
     		currentFont = (uint8_t *) font_16x32;
 			break;
-
+#endif
     	default:
     		return -2;// Invalid font selected
     		break;
@@ -306,63 +268,29 @@ int ucPrintCore(int16_t x, int16_t y, const char *szMsg, ucFont_t fontSize, ucTe
 			}
 		}
 	}
+#endif // ! PLATFORM_GD77S
 	return 0;
-}
-
-void ucSetInverseVideo(bool isInverted)
-{
-	UC1701_setCommandMode(true);
-	if (isInverted)
-	{
-		UC1701_transfer(0xA7); // Black background, white pixels
-	}
-	else
-	{
-		UC1701_transfer(0xA4); // White background, black pixels
-	}
-
-    UC1701_transfer(0xAF); // Set Display Enable
-    UC1701_setCommandMode(false);
-}
-
-void ucBegin(bool isInverted)
-{
-	GPIO_PinWrite(GPIO_Display_CS, Pin_Display_CS, 0);// Enable CS permanently
-    // Set the LCD parameters...
-	UC1701_setCommandMode(true);
-	UC1701_transfer(0xE2); // System Reset
-	UC1701_transfer(0x2F); // Voltage Follower On
-	UC1701_transfer(0x81); // Set Electronic Volume = 15
-	UC1701_transfer(nonVolatileSettings.displayContrast); //
-	UC1701_transfer(0xA2); // Set Bias = 1/9
-	UC1701_transfer(0xA1); // A0 Set SEG Direction
-	UC1701_transfer(0xC0); // Set COM Direction
-	if (isInverted)
-	{
-		UC1701_transfer(0xA7); // Black background, white pixels
-	}
-	else
-	{
-		UC1701_transfer(0xA4); // White background, black pixels
-	}
-
-    UC1701_setCommandMode(true);
-    UC1701_transfer(0xAF); // Set Display Enable
-    ucClearBuf();
-    ucRender();
-}
-
-void ucSetContrast(uint8_t contrast)
-{
-	UC1701_setCommandMode(true);
-	UC1701_transfer(0x81);              // command to set contrast
-	UC1701_transfer(contrast);          // set contrast
-	UC1701_setCommandMode(false);
 }
 
 void ucClearBuf(void)
 {
 	memset(screenBuf,0x00,1024);
+}
+
+void ucClearRows(int16_t startRow, int16_t endRow, bool isInverted)
+{
+	// Boundaries
+	if (((startRow < 0) || (endRow < 0)) || ((startRow > 8) || (endRow > 8)) || (startRow == endRow))
+		return;
+
+	if (endRow < startRow)
+	{
+		swap(startRow, endRow);
+	}
+
+	// memset would be faster than ucFillRect
+	//ucFillRect(0, (startRow * 8), 128, (8 * (endRow - startRow)), true);
+    memset(screenBuf + (128 * startRow), (isInverted ? 0xFF : 0x00), (128 * (endRow - startRow)));
 }
 
 void ucPrintCentered(uint8_t y,const char *text, ucFont_t fontSize)
@@ -1070,6 +998,16 @@ void ucDrawXBitmap(int16_t x, int16_t y, const uint8_t *bitmap, int16_t w, int16
 
 void ucDrawChoice(ucChoice_t choice, bool clearRegion)
 {
+#if defined(PLATFORM_RD5R)
+	const uint8_t TEXT_Y = 40;
+	const uint8_t FILLRECT_Y = 32;
+#else
+	const uint8_t TEXT_Y = 49;
+	const uint8_t FILLRECT_Y = 48;
+#endif
+	const uint8_t TEXT_L_CENTER_X = 12;
+	const uint8_t TEXT_R_CENTER_X = 115;
+
 	struct
 	{
 		char *lText;
@@ -1082,13 +1020,11 @@ void ucDrawChoice(ucChoice_t choice, bool clearRegion)
 	};
 	char *lText = NULL;
 	char *rText = NULL;
-	uint8_t lCenter = 12;
-	uint8_t rCenter = 115;
-	uint8_t y = 49;
+
 
 	if (clearRegion)
 	{
-		ucFillRect(0, 48, 128, 16, true);
+		ucFillRect(0, FILLRECT_Y, 128, 16, true);
 	}
 
 	if (choice >= CHOICES_NUM) {
@@ -1100,23 +1036,25 @@ void ucDrawChoice(ucChoice_t choice, bool clearRegion)
 
 	if (lText)
 	{
-		int16_t x = (lCenter - ((strlen(lText) * 8) >> 1));
+		int16_t x = (TEXT_L_CENTER_X - ((strlen(lText) * 8) >> 1));
 
 		if (x < 2)
+		{
 			x = 2;
-
-		ucPrintAt(x, y, lText, FONT_8x16);
+		}
+		ucPrintAt(x, TEXT_Y, lText, FONT_SIZE_3);
 	}
 
 	if(rText)
 	{
 		size_t len = (strlen(rText) * 8);
-		int16_t x = (rCenter - (len >> 1));
+		int16_t x = (TEXT_R_CENTER_X - (len >> 1));
 
 		if ((x + len) > 126)
+		{
 			x = (126 - len);
-
-		ucPrintAt(x, y, rText, FONT_8x16);
+		}
+		ucPrintAt(x, TEXT_Y, rText, FONT_SIZE_3);
 	}
 }
 

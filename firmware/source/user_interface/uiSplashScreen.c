@@ -15,19 +15,18 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+#include <settings.h>
 #include <user_interface/menuSystem.h>
-#include "fw_settings.h"
 
 static void updateScreen(void);
 static void handleEvent(uiEvent_t *ev);
 
-
-int menuSplashScreen(uiEvent_t *ev, bool isFirstRun)
+int uiSplashScreen(uiEvent_t *ev, bool isFirstRun)
 {
 	uint8_t melodyBuf[512];
 	if (isFirstRun)
 	{
-		if (codeplugGetOpenGD77CustomData(CODEPLUG_CUSTOM_DATA_TYPE_BEEP,melodyBuf ))
+		if (codeplugGetOpenGD77CustomData(CODEPLUG_CUSTOM_DATA_TYPE_BEEP, melodyBuf))
 		{
 		   create_song(melodyBuf);
 		   set_melody(melody_generic);
@@ -56,6 +55,9 @@ static void updateScreen(void)
 
 	codeplugGetBootScreenData(line1,line2,&bootScreenType,&bootScreenPasswordEnabled,&bootScreenPassword);
 
+	strcpy(talkAliasText,line1);
+	strcat(talkAliasText,line2);
+
 	if (bootScreenType==0)
 	{
 		customDataHasImage = codeplugGetOpenGD77CustomData(CODEPLUG_CUSTOM_DATA_TYPE_IMAGE,ucGetDisplayBuffer() );
@@ -64,9 +66,16 @@ static void updateScreen(void)
 	if (!customDataHasImage)
 	{
 		ucClearBuf();
-		ucPrintCentered(10, "OpenGD77", FONT_8x16);
-		ucPrintCentered(28, line1, FONT_8x16);
-		ucPrintCentered(42, line2, FONT_8x16);
+
+#if defined(PLATFORM_RD5R)
+		ucPrintCentered(0, "OpenRD5R", FONT_SIZE_3);
+#elif defined(PLATFORM_GD77)
+		ucPrintCentered(8, "OpenGD77", FONT_SIZE_3);
+#elif defined(PLATFORM_DM1801)
+		ucPrintCentered(8, "OpenDM1801", FONT_SIZE_3);
+#endif
+		ucPrintCentered((DISPLAY_SIZE_Y/4)*2, line1, FONT_SIZE_3);
+		ucPrintCentered((DISPLAY_SIZE_Y/4)*3, line2, FONT_SIZE_3);
 	}
 
 	ucRender();
@@ -75,17 +84,10 @@ static void updateScreen(void)
 
 static void handleEvent(uiEvent_t *ev)
 {
-	static uint32_t m = 0;
-
-	if (m == 0)
-	{
-		m = ev->ticks;
-		return;
-	}
-
-	//if (ev->ticks - m) > 2000)
 	if (melody_play==NULL)
 	{
+		ucClearBuf();
+		ucRender();
 		menuSystemSetCurrentMenu(nonVolatileSettings.initialMenuNumber);
 	}
 }

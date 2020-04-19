@@ -27,15 +27,15 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include <math.h>
-#include "fw_common.h"
+#include "common.h"
 
 typedef enum
 {
-	FONT_6x8 = 0,
-	FONT_6x8_BOLD,
-	FONT_8x8,
-	FONT_8x16,
-	FONT_16x32
+	FONT_SIZE_1 = 0,
+	FONT_SIZE_1_BOLD,
+	FONT_SIZE_2,
+	FONT_SIZE_3,
+	FONT_SIZE_4
 } ucFont_t;
 
 typedef enum
@@ -55,8 +55,14 @@ typedef enum
 
 extern uint8_t screenBuf[];
 
+
+extern const int FONT_SIZE_3_HEIGHT;
+extern const int DISPLAY_SIZE_Y;
+extern const int DISPLAY_SIZE_X;
+
 void ucBegin(bool isInverted);
 void ucClearBuf(void);
+void ucClearRows(int16_t startRow, int16_t endRow, bool isInverted);
 void ucRender(void);
 void ucRenderRows(int16_t startRow, int16_t endRow);
 void ucPrintCentered(uint8_t y,const  char *text, ucFont_t fontSize);

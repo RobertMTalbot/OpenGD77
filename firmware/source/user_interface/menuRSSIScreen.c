@@ -15,12 +15,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+#include <calibration.h>
+#include <settings.h>
+#include <trx.h>
 #include <user_interface/menuSystem.h>
-#include <user_interface/uiUtilityQSOData.h>
+#include <user_interface/uiUtilities.h>
 #include <user_interface/uiLocalisation.h>
-#include "fw_calibration.h"
-#include "fw_settings.h"
-#include "fw_trx.h"
 
 static calibrationRSSIMeter_t rssiCalibration;
 static void updateScreen(void);
@@ -39,9 +39,9 @@ int menuRSSIScreen(uiEvent_t *ev, bool isFirstRun)
 		if (ev->hasEvent)
 			handleEvent(ev);
 
-		if((ev->ticks - m) > RSSI_UPDATE_COUNTER_RELOAD)
+		if((ev->time - m) > RSSI_UPDATE_COUNTER_RELOAD)
 		{
-			m = ev->ticks;
+			m = ev->time;
 			updateScreen();
 		}
 	}
@@ -71,10 +71,10 @@ static void updateScreen(void)
 		menuDisplayTitle(currentLanguage->rssi);
 
 		sprintf(buffer, "%d", trxRxSignal);
-		ucPrintCore(0, 3, buffer, FONT_8x8, TEXT_ALIGN_RIGHT, false);
+		ucPrintCore(0, 3, buffer, FONT_SIZE_2, TEXT_ALIGN_RIGHT, false);
 
 		sprintf(buffer, "%d%s", dBm, "dBm");
-		ucPrintCentered(20, buffer, FONT_8x16);
+		ucPrintCentered(20, buffer, FONT_SIZE_3);
 
 		barGraphLength = ((dBm + 130) * 24)/10;
 		if (barGraphLength<0)
@@ -86,17 +86,19 @@ static void updateScreen(void)
 		{
 			barGraphLength=123;
 		}
-		ucFillRect(4, 40,barGraphLength,8,false);
 
-		ucPrintCore(5,50,"S1  S3  S5  S7  S9", FONT_6x8, TEXT_ALIGN_LEFT, false);
+		ucFillRect(4, DISPLAY_SIZE_Y-18,barGraphLength,8,false);
+		ucPrintCore(5,DISPLAY_SIZE_Y-8,"S1  S3  S5  S7  S9", FONT_SIZE_1, TEXT_ALIGN_LEFT, false);
+
 		ucRender();
 		trxRxSignal=0;
-
 }
 
 
 static void handleEvent(uiEvent_t *ev)
 {
+	displayLightTrigger();
+
 	if (KEYCHECK_SHORTUP(ev->keys,KEY_RED))
 	{
 		menuSystemPopPreviousMenu();
@@ -107,6 +109,4 @@ static void handleEvent(uiEvent_t *ev)
 		menuSystemPopAllAndDisplayRootMenu();
 		return;
 	}
-
-	displayLightTrigger();
 }

@@ -15,8 +15,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+#include <trx.h>
 #include <user_interface/menuSystem.h>
-#include "fw_trx.h"
 
 static void handleTick(void);
 
@@ -28,7 +28,7 @@ static int radioMode;
 static int radioBandWidth;
 
 
-int menuCPS(uiEvent_t *ev, bool isFirstRun)
+int uiCPS(uiEvent_t *ev, bool isFirstRun)
 {
 	if (isFirstRun)
 	{
@@ -51,7 +51,7 @@ int menuCPS(uiEvent_t *ev, bool isFirstRun)
 	return 0;
 }
 
-void menuCPSUpdate(int command,int x, int y, ucFont_t fontSize, ucTextAlign_t alignment, bool isInverted,char *szMsg)
+void uiCPSUpdate(int command,int x, int y, ucFont_t fontSize, ucTextAlign_t alignment, bool isInverted,char *szMsg)
 {
 	switch(command)
 	{

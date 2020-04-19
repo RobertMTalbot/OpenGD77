@@ -20,7 +20,7 @@
  * Translators: OH1E
  *
  *
- * Rev: 8 
+ * Rev: 12 
  */
 #ifndef USER_INTERFACE_LANGUAGES_FINNISH_H_
 #define USER_INTERFACE_LANGUAGES_FINNISH_H_
@@ -44,10 +44,12 @@ const stringsTable_t finnishLanguage =
 .contacts		= "Kontaktit",
 .firmware_info		= "Laiteohjelmisto",
 .last_heard		= "Viimeksi kuultu",
-.options		= "Asetukset",
+.options		= "Yleis  Asetukset",
 .display_options	= "N‰ytˆn Asetukset",
+.sound_options		= "ƒ‰ni   Asetukset", 	// MaxLen: 16
 .channel_details	= "Kanava Asetukset",
 .new_contact		= "Uusi kontakti",
+.new_channel		= "Uusi kanava", 	// MaxLen: 16, leave room for a space and four channel digits after
 .contact_list		= "Kontakti lista",
 .hotspot_mode		= "Hotspotti tila",
 .contact_details	= "Kontakti Asetus",
@@ -78,6 +80,7 @@ const stringsTable_t finnishLanguage =
 .scan			= "Skannaus",
 .channelToVfo		= "Kanava --> VFO",
 .vfoToChannel		= "VFO --> Kanava",
+.vfoToNewChannel	= "VFO --> Uusi kan", 	// MaxLen: 16
 .group			= "Ryhm‰", 		// MaxLen: 16 (with .type)
 .private		= "Privaatti", 		// MaxLen: 16 (with .type)
 .all			= "Kaikki", 		// MaxLen: 16 (with .type)
@@ -107,11 +110,13 @@ const stringsTable_t finnishLanguage =
 .calibration		= "Kalibriointi", 	// MaxLen: 16 (with ':' + .on or .off)
 .band_limits		= "B‰ndi Rajoitu", 	// MaxLen: 16 (with ':' + .on or .off)
 .beep_volume		= "N‰pƒ‰niVoim", 	// MaxLen: 16 (with ':' + -24..6 + 'dB')
-.dmr_mic_gain		= "DMRMicGain", 	// MaxLen: 16 (with ':' + -33..12 + 'dB')
+.dmr_mic_gain		= "DMR MicGain", 	// MaxLen: 16 (with ':' + -33..12 + 'dB')
+.fm_mic_gain		= "FM mic", 		// MaxLen: 16 (with ':' + 0..31)
 .key_long		= "N‰p pitk‰",	 	// MaxLen: 11 (with ':' + x.xs fitted)
 .key_repeat		= "N‰p toisto", 	// MaxLen: 11 (with ':' + x.xs fitted)
 .dmr_filter_timeout	= "Suodin aika", 	// MaxLen: 16 (with ':' + 1..90 + 's')
 .brightness		= "Kirkkaus", 		// MaxLen: 16 (with ':' + 0..100 + '%')
+.brightness_off		= "Min kirkkaus", 	// MaxLen: 16 (with ':' + 0..100 + '%')
 .contrast		= "Kontrasti", 		// MaxLen: 16 (with ':' + 12..30)
 .colour_invert		= "V‰ri: K‰‰nteinen",
 .colour_normal		= "V‰ri: Normaali",
@@ -122,7 +127,7 @@ const stringsTable_t finnishLanguage =
 .DISMISS		= "POISTU", 		// MaxLen: 8 (choice above green/red buttons)
 .scan_mode		= "Skannaus", 		// MaxLen: 16 (with ':' + .hold or .pause)
 .hold			= "Pys‰yty", 		// MaxLen: 16 (with ':' + .scan_mode)
-.pause			= "Pause", 		// MaxLen: 16 (with ':' + .scan_mode)
+.pause			= "Pauseta", 		// MaxLen: 16 (with ':' + .scan_mode)
 .empty_list		= "Tyhj‰ lista", 	// MaxLen: 16
 .delete_contact_qm	= "Poista kontakti?", 	// MaxLen: 16
 .contact_deleted	= "Kontakti Poistet", 	// MaxLen: 16
@@ -137,8 +142,16 @@ const stringsTable_t finnishLanguage =
 .cc_scan		= "V‰rikoodi scan", 	// MaxLen: 16
 .low_battery		= "Akku V‰hiss‰ !",	// MaxLen: 16
 .Auto			= "Automaatti",		// MaxLen 16 (with .mode + ':') 
-.manual			= "Manuaali",  		// MaxLen 16 (with .mode + ':') 
-.ptt_toggle		= "PTT Lukko",    	// MaxLen 16 (with ':' + .on or .off)
+.manual			= "Manuaali",		// MaxLen 16 (with .mode + ':') 
+.ptt_toggle		= "PTT Lukko",		// MaxLen 16 (with ':' + .on or .off)
+.private_call_handling	= "K‰sittele PC",	// MaxLen 16 (with ':' + .on ot .off)
+.stop			= "Stoppaa", 		// Maxlen 16 (with ':' + .scan_mode)
+.one_line		= "1 rivi", 		// MaxLen 16 (with ':' + .contact)
+.two_lines		= "2 rivi‰", 		// MaxLen 16 (with ':' + .contact)
+.priority_order		= "J‰rjest", 		// MaxLen 16 (with ':' + 'Cc/DB/TA')
+.dmr_beep		= "DMR piippi", 	// MaxLen 16 (with ':' + .star/.stop/.both/.none)
+.start			= "Alku", 		// MaxLen 16 (with ':' + .dmr_beep)
+.both			= "Molemm" 		// MaxLen 16 (with ':' + .dmr_beep)
 };
 /********************************************************************
  *

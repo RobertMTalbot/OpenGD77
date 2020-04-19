@@ -20,7 +20,7 @@
  * Translators: DG3GSP, DL4LEX
  *
  *
- * Rev: 3.3
+ * Rev: 3.7
  */
 #ifndef USER_INTERFACE_LANGUAGES_GERMAN_H_
 #define USER_INTERFACE_LANGUAGES_GERMAN_H_
@@ -46,8 +46,10 @@ const stringsTable_t germanLanguage =
 .last_heard				= "Zuletzt gehört", // MaxLen: 16
 .options				= "Einstellungen", // MaxLen: 16
 .display_options		= "Display Optionen", // MaxLen: 16
+.sound_options				= "Audio Optionen", // MaxLen: 16
 .channel_details		= "Kanal Details", // MaxLen: 16
 .new_contact			= "Neuer Kontakt", // MaxLen: 16
+.new_channel			= "Neuer Kanal", // MaxLen: 16, leave room for a space and four channel digits after
 .contact_list			= "Kontaktliste", // MaxLen: 16
 .hotspot_mode			= "Hotspot-Modus", // MaxLen: 16
 .contact_details		= "Kontakt Details", // MaxLen: 16
@@ -78,6 +80,7 @@ const stringsTable_t germanLanguage =
 .scan					= "Suchlauf", // MaxLen: 16
 .channelToVfo			= "Kanal --> VFO", // MaxLen: 16
 .vfoToChannel			= "VFO --> Kanal", // MaxLen: 16
+.vfoToNewChannel		= "VFO --> New Chan", // MaxLen: 16
 .group					= "Gruppe", // MaxLen: 16 (with .type)
 .private				= "Privat", // MaxLen: 16 (with .type)
 .all					= "Alle", // MaxLen: 16 (with .type)
@@ -108,10 +111,12 @@ const stringsTable_t germanLanguage =
 .band_limits			= "Band Limit", // MaxLen: 16 (with ':' + .on or .off)
 .beep_volume			= "Beep Lauts", // MaxLen: 16 (with ':' + -24..6 + 'dB')
 .dmr_mic_gain			= "DMR Mikro", // MaxLen: 16 (with ':' + -33..12 + 'dB')
+.fm_mic_gain				= "FM Mikro", // MaxLen: 16 (with ':' + 0..31)
 .key_long				= "Key lang", // MaxLen: 11 (with ':' + x.xs fitted)
 .key_repeat				= "Key wied", // MaxLen: 11 (with ':' + x.xs fitted)
 .dmr_filter_timeout		= "DMR Filter", // MaxLen: 16 (with ':' + 1..90 + 's')
 .brightness				= "Helligkeit", // MaxLen: 16 (with ':' + 0..100 + '%')
+.brightness_off			= "Min Helligk.", // MaxLen: 16 (with ':' + 0..100 + '%')
 .contrast				= "Kontrast", // MaxLen: 16 (with ':' + 12..30)
 .colour_invert			= "Anzeige:Invers", // MaxLen: 16
 .colour_normal			= "Anzeige:Normal", // MaxLen: 16
@@ -139,6 +144,14 @@ const stringsTable_t germanLanguage =
 .Auto					= "Auto", // MaxLen 16 (with .mode + ':') 
 .manual					= "Manuell",  // MaxLen 16 (with .mode + ':') 
 .ptt_toggle				= "PTT bistabil", // MaxLen 16 (with ':' + .on or .off)
+.private_call_handling		= "Anruf Hinw.", // MaxLen 16 (with ':' + .on ot .off)
+.stop					= "Stop", // Maxlen 16 (with ':' + .scan_mode)
+.one_line				= "1 Zeile", // MaxLen 16 (with ':' + .contact)
+.two_lines				= "2 Zeilen", // MaxLen 16 (with ':' + .contact)
+.priority_order				= "ID-Prio", // MaxLen 16 (with ':' + 'Cc/DB/TA')
+.dmr_beep				= "DMR TX Ton", // MaxLen 16 (with ':' + .star/.stop/.both/.none)
+.start					= "Start", // MaxLen 16 (with ':' + .dmr_beep)
+.both					= "Beide" // MaxLen 16 (with ':' + .dmr_beep)
 };
 /********************************************************************
  *
@@ -148,4 +161,4 @@ const stringsTable_t germanLanguage =
  * or emacs on Linux with windows-1252-unix encoding
  *
  ********************************************************************/
-#endif /* USER_INTERFACE_LANGUAGES_GERMAN_H_ */
+#endif /* USER_INTERFACE_LANGUAGES_GERMAN_H  */

@@ -23,7 +23,11 @@ static void handleEvent(uiEvent_t *ev);
 static void scrollDownOneLine(void);
 
 //#define CREDIT_TEXT_LENGTH 33
+#if defined(PLATFORM_RD5R)
+static const int NUM_LINES_PER_SCREEN = 4;
+#else
 static const int NUM_LINES_PER_SCREEN = 6;
+#endif
 const int NUM_CREDITS = 6;
 static const char *creditTexts[] = {"Roger VK3KYY","Kai DG4KLU","Jason VK7ZJA","Alex DL4LEX","Daniel F1RMB","Colin G4EML"};
 static int currentDisplayIndex=0;
@@ -56,11 +60,11 @@ static void updateScreen(void)
 	ucClearBuf();
 	menuDisplayTitle(currentLanguage->credits);
 
-	for(int i=0;i<6;i++)
+	for(int i=0;i<NUM_LINES_PER_SCREEN;i++)
 	{
 		if ((i+currentDisplayIndex) < NUM_CREDITS)
 		{
-			ucPrintCentered(i*8 + 16,(char *)creditTexts[i+currentDisplayIndex], FONT_6x8);
+			ucPrintCentered(i*8 + 16,(char *)creditTexts[i+currentDisplayIndex], FONT_SIZE_1);
 		}
 	}
 	ucRender();
